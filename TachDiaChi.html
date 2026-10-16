@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tách Cột Địa Chỉ</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Thư viện SheetJS & PapaParse (Sử dụng xlsx-js-style để hỗ trợ format Excel) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <style>
+:root {
+    --primary-color: #4f46e5;
+    --primary-hover: #4338ca;
+    --bg-color: #f3f4f6;
+    --card-bg: rgba(255, 255, 255, 0.85);
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --border-color: #e5e7eb;
+    --focus-ring: rgba(79, 70, 229, 0.4);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Dynamic Animated Background Shapes */
+.background-shapes {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.shape {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.6;
+    animation: float 10s infinite ease-in-out alternate;
+}
+
+.shape-1 {
+    top: -10%; left: -10%;
+    width: 50vw; height: 50vw;
+    background: #8b5cf6;
+    animation-delay: 0s;
+}
+
+.shape-2 {
+    bottom: -20%; right: -10%;
+    width: 60vw; height: 60vw;
+    background: #ec4899;
+    animation-delay: -5s;
+}
+
+.shape-3 {
+    top: 40%; left: 60%;
+    width: 40vw; height: 40vw;
+    background: #3b82f6;
+    animation-delay: -2s;
+}
+
+@keyframes float {
+    0% { transform: translateY(0) scale(1); }
+    100% { transform: translateY(30px) scale(1.1); }
+}
+
+/* Main Container Container */
+.container {
+    width: 100%;
+    max-width: 700px;
+    z-index: 1;
+    animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
+    background: linear-gradient(135deg, #1e3a8a, #4f46e5);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.header p {
+    color: var(--text-main);
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+/* Glasscard main content */
+.main-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 24px;
+    padding: 2.5rem;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+/* Input File Area */
+.file-upload {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+#input-file {
+    display: none;
+}
+
+.file-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    border: 2px dashed var(--primary-color);
+    border-radius: 16px;
+    background-color: rgba(79, 70, 229, 0.05);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.file-label:hover {
+    background-color: rgba(79, 70, 229, 0.1);
+    transform: translateY(-2px);
+}
+
+.file-icon {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+#file-name-display {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    text-align: center;
+    word-break: break-all;
+}
+
+/* Input Grid */
+.input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.2s ease;
+    background-color: #ffffff;
+}
+
+.form-group input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+/* Submit Button */
+.submit-btn {
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
+}
+
+.submit-btn:active {
+    transform: translateY(0);
+}
+
+.submit-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Status Message */
+.status-message {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.status-message.hidden {
+    display: none;
+}
+
+.status-message.success {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.status-message.error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* Author Info Card */
+.author-info {
+    background: linear-gradient(to right, #1f2937, #374151);
+    border-radius: 20px;
+    padding: 2rem;
+    color: #f3f4f6;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+}
+
+.author-badge {
+    position: absolute;
+    top: 0; right: 0;
+    background: var(--primary-color);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.5rem 1.5rem;
+    border-bottom-left-radius: 20px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.author-details p {
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.author-details strong {
+    color: #a78bfa;
+    margin-right: 0.5rem;
+}
+
+.author-details p:last-child {
+    margin-bottom: 0;
+}
+
+/* Responsive adjustment */
+@media (max-width: 640px) {
+    .input-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .main-card {
+        padding: 1.5rem;
+    }
+}
+
+</style>
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <h1>Công Cụ Tách Địa Chỉ</h1>
+            <p>Tự động tách cột địa chỉ thành Tên đường & Số nhà và sắp xếp dữ liệu (Hỗ trợ CSV, XLSX)</p>
+        </header>
+
+        <main class="main-card">
+            <form id="process-form">
+                <div class="form-group file-upload">
+                    <label for="input-file" class="file-label">
+                        <div class="file-icon">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                        <span id="file-name-display">Chọn file (.csv hoặc .xlsx)</span>
+                    </label>
+                    <input type="file" id="input-file" accept=".csv, .xlsx" required>
+                </div>
+                
+                <div class="input-grid">
+                    <div class="form-group">
+                        <label for="address-column">Tên cột địa chỉ gốc</label>
+                        <input type="text" id="address-column" value="dia_chi" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="number-column">Tên cột số nhà (mới)</label>
+                        <input type="text" id="number-column" value="so_nha" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="street-column">Tên cột tên đường (mới)</label>
+                        <input type="text" id="street-column" value="ten_duong" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sheet-name">Tên Sheet (chỉ cho XLSX, tùy chọn)</label>
+                        <input type="text" id="sheet-name" placeholder="Để trống = sheet đầu tiên">
+                    </div>
+                </div>
+
+                <div id="status-message" class="status-message hidden"></div>
+
+                <button type="submit" id="submit-btn" class="submit-btn">
+                    Tách & Sắp Xếp Dữ Liệu
+                </button>
+            </form>
+        </main>
+
+        <footer class="author-info">
+            <div class="author-badge">Thông tin tác giả</div>
+            <div class="author-details">
+                <p><strong>Tác giả:</strong> Nguyễn Hồng Thái</p>
+                <p><strong>Đơn vị:</strong> Shantek Group</p>
+                <p><strong>Email:</strong> thainguyenbpo@gmail.com</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+// --- CORE LOGIC PORTED FROM PYTHON --- //
+const NUMBER_TOKEN_PATTERN = /^[0-9A-Za-z/]+$/;
+const LEADING_HOUSE_NUMBER_PATTERN = /^\s*((?=[A-Za-z0-9./-]*\d)[A-Za-z0-9./-]+(?:\s*-\s*[A-Za-z0-9./-]+)*)(.*)$/;
+
+function split_address(address) {
+    let value = (address || "").trim();
+    if (!value) return ["", ""];
+
+    value = value.replace(/\s*\/\s*/g, "/");
+    value = value.replace(/\s*-\s*/g, "-");
+    value = value.replace(/\s+/g, " ").trim();
+
+    const match = value.match(LEADING_HOUSE_NUMBER_PATTERN);
+    if (match) {
+        let number = match[1].replace(/\s+/g, " ").replace(/^[ ,]+|[ ,]+$/g, "");
+        let street = match[2].replace(/\s+/g, " ").replace(/^[ ,-]+|[ ,-]+$/g, "");
+        if (number) {
+            return [number, street];
+        }
+    }
+
+    const parts = value.split(" ");
+    const number_parts = [];
+
+    for (let part of parts) {
+        if (NUMBER_TOKEN_PATTERN.test(part) && /\d/.test(part)) {
+            number_parts.push(part);
+            continue;
+        }
+        break;
+    }
+
+    if (number_parts.length === 0) {
+        return ["", value];
+    }
+
+    const number = number_parts.join(" ");
+    const street = parts.slice(number_parts.length).join(" ").trim();
+    return [number, street];
+}
+
+function normalize_sort_text(value) {
+    let normalized = (value || "").trim().replace(/\s+/g, " ").toLowerCase();
+    normalized = normalized.replace(/[đĐ]/g, "d");
+    normalized = normalized.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return normalized.replace(/[đĐ]/g, "d");
+}
+
+function extract_key(value) {
+    let normalized = (value || "").trim();
+    if (!normalized) return [[1]];
+    
+    const parts = normalized.toLowerCase().split(/(\d+)/);
+    const key = [[0]];
+    for (let part of parts) {
+        if (!part) continue;
+        if (/^\d+$/.test(part)) {
+            key.push([0, parseInt(part, 10)]);
+        } else {
+            key.push([1, part]);
+        }
+    }
+    return key;
+}
+
+function compare_key(key1, key2) {
+    const len = Math.min(key1.length, key2.length);
+    for (let i = 0; i < len; i++) {
+        const item1 = key1[i];
+        const item2 = key2[i];
+        if (item1[0] !== item2[0]) {
+            return item1[0] - item2[0];
+        }
+        if (item1.length > 1 && item2.length > 1) {
+            if (item1[1] < item2[1]) return -1;
+            if (item1[1] > item2[1]) return 1;
+        }
+    }
+    return key1.length - key2.length;
+}
+
+function compareRows(rowA, rowB, extractStreet, extractNumber) {
+    const streetA = normalize_sort_text(extractStreet(rowA));
+    const streetB = normalize_sort_text(extractStreet(rowB));
+    if (streetA < streetB) return -1;
+    if (streetA > streetB) return 1;
+    
+    const hnKeyA = extract_key(extractNumber(rowA));
+    const hnKeyB = extract_key(extractNumber(rowB));
+    const hnCompare = compare_key(hnKeyA, hnKeyB);
+    if (hnCompare !== 0) return hnCompare;
+    
+    const normNumberA = normalize_sort_text(extractNumber(rowA));
+    const normNumberB = normalize_sort_text(extractNumber(rowB));
+    if (normNumberA < normNumberB) return -1;
+    if (normNumberA > normNumberB) return 1;
+    
+    return 0;
+}
+
+// --- UI INTERACTIONS --- //
+document.getElementById('input-file').addEventListener('change', function(e) {
+    const fileName = e.target.files[0] ? e.target.files[0].name : "Chọn file (.csv hoặc .xlsx)";
+    document.getElementById('file-name-display').textContent = fileName;
+});
+
+document.getElementById('process-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('input-file');
+    const file = fileInput.files[0];
+    if (!file) {
+        showStatus("Vui lòng chọn một file.", "error");
+        return;
+    }
+
+    const addrCol = document.getElementById('address-column').value.trim();
+    const numCol = document.getElementById('number-column').value.trim();
+    const strCol = document.getElementById('street-column').value.trim();
+    const sheetName = document.getElementById('sheet-name').value.trim();
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    
+    showStatus("Đang xử lý...", "success");
+
+    if (ext === 'csv') {
+        processCSV(file, addrCol, numCol, strCol);
+    } else if (ext === 'xlsx') {
+        processXLSX(file, addrCol, numCol, strCol, sheetName);
+    } else {
+        showStatus("Định dạng file không hỗ trợ. Vui lòng thử CSV hoặc XLSX.", "error");
+    }
+});
+
+function showStatus(message, type) {
+    const statusEl = document.getElementById('status-message');
+    statusEl.textContent = message;
+    statusEl.className = `status-message ${type}`;
+}
+
+function processCSV(file, addrCol, numCol, strCol) {
+    Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+            const data = results.data;
+            if (data.length === 0) {
+                showStatus("File CSV rỗng.", "error");
+                return;
+            }
+            if (!(addrCol in data[0])) {
+                showStatus(`Không tìm thấy cột địa chỉ: ${addrCol}`, "error");
+                return;
+            }
+
+            // Process data
+            const outData = [];
+            for (let row of data) {
+                const parts = split_address(row[addrCol] || "");
+                row[numCol] = parts[0];
+                row[strCol] = parts[1];
+                outData.push(row);
+            }
+
+            // Sort
+            outData.sort((a, b) => compareRows(a, b, r => r[strCol], r => r[numCol]));
+
+            // Output columns order: maintain original + new columns at the end if not present
+            const fields = results.meta.fields;
+            if (!fields.includes(numCol)) fields.push(numCol);
+            if (!fields.includes(strCol)) fields.push(strCol);
+
+            const csvString = Papa.unparse({
+                fields: fields,
+                data: outData
+            }, { quotes: false });
+
+            // Add BOM for Excel UTF-8 compatibility
+            const blob = new Blob(["\ufeff" + csvString], { type: 'text/csv;charset=utf-8;' });
+            downloadFile(blob, getStandardOutputName(file.name));
+            showStatus(`Đã xử lý ${data.length} dòng thành công! File đã được tải xuống.`, "success");
+        },
+        error: function(err) {
+            showStatus(`Lỗi khi đọc CSV: ${err.message}`, "error");
+        }
+    });
+}
+
+function processXLSX(file, addrCol, numCol, strCol, sheetName) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            
+            const targetSheetName = sheetName || workbook.SheetNames[0];
+            if (!workbook.Sheets[targetSheetName]) {
+                showStatus(`Không tìm thấy sheet: ${targetSheetName}`, "error");
+                return;
+            }
+
+            const sheet = workbook.Sheets[targetSheetName];
+            const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: null});
+            
+            if (rows.length === 0) {
+                showStatus("File XLSX báo rỗng.", "error");
+                return;
+            }
+
+            const headerRow = rows[0];
+            let addrIdx = -1;
+            let existingSplitCols = [];
+
+            for (let i = 0; i < headerRow.length; i++) {
+                let hStr = headerRow[i] != null ? headerRow[i].toString().trim() : "";
+                if (hStr === addrCol) addrIdx = i;
+                if (hStr === numCol || hStr === strCol) {
+                    existingSplitCols.push(i);
+                }
+            }
+
+            if (addrIdx === -1) {
+                showStatus(`Không tìm thấy cột địa chỉ: ${addrCol}`, "error");
+                return;
+            }
+
+            // Remove existing num/str cols to prevent duplication
+            existingSplitCols.sort((a, b) => b - a); // sort descending
+            for (let c of existingSplitCols) {
+                for (let r = 0; r < rows.length; r++) {
+                    rows[r].splice(c, 1);
+                }
+                if (c < addrIdx) addrIdx--;
+            }
+
+            const numIdx = addrIdx + 1;
+            const strIdx = addrIdx + 2;
+
+            // Insert new headers
+            rows[0].splice(numIdx, 0, numCol, strCol);
+
+            // Process data rows
+            const dataRows = [];
+            for (let r = 1; r < rows.length; r++) {
+                const row = rows[r];
+                const rawAddr = row[addrIdx] != null ? row[addrIdx].toString() : "";
+                const [number, street] = split_address(rawAddr);
+                
+                // Ensure row has enough empty elements before splicing
+                while (row.length < addrIdx + 1) {
+                    row.push(null);
+                }
+                
+                row.splice(numIdx, 0, number, street);
+                dataRows.push(row);
+            }
+
+            // Sort data rows
+            dataRows.sort((a, b) => compareRows(
+                a, b, 
+                r => r[strIdx] != null ? r[strIdx].toString() : "", 
+                r => r[numIdx] != null ? r[numIdx].toString() : ""
+            ));
+
+            // Combine back
+            const finalRows = [rows[0], ...dataRows];
+
+            // Rebuild Workbook
+            const newSheet = XLSX.utils.aoa_to_sheet(finalRows);
+            
+            // Format Table and Header
+            const range = XLSX.utils.decode_range(newSheet['!ref']);
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cellAddress = {c: C, r: R};
+                    const cellRef = XLSX.utils.encode_cell(cellAddress);
+                    
+                    // Add empty cells if they don't exist within the range so they get borders too
+                    if (!newSheet[cellRef]) {
+                        newSheet[cellRef] = { t: 's', v: '' };
+                    }
+
+                    if (R === 0) {
+                        newSheet[cellRef].s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            fill: { fgColor: { rgb: "4F46E5" } }, // Màu xanh giống giao diện web
+                            border: {
+                                top: { style: "thin", color: { rgb: "000000"} },
+                                bottom: { style: "thin", color: { rgb: "000000"} },
+                                left: { style: "thin", color: { rgb: "000000"} },
+                                right: { style: "thin", color: { rgb: "000000"} }
+                            },
+                            alignment: { horizontal: "center", vertical: "center" }
+                        };
+                    } else {
+                        newSheet[cellRef].s = {
+                            border: {
+                                top: { style: "thin", color: { rgb: "000000"} },
+                                bottom: { style: "thin", color: { rgb: "000000"} },
+                                left: { style: "thin", color: { rgb: "000000"} },
+                                right: { style: "thin", color: { rgb: "000000"} }
+                            }
+                        };
+                    }
+                }
+            }
+
+            workbook.Sheets[targetSheetName] = newSheet;
+
+            // Save
+            const wopts = { bookType: 'xlsx', bookSST: false, type: 'array' };
+            const wbout = XLSX.write(workbook, wopts);
+            const blob = new Blob([wbout], {type: "application/octet-stream"});
+            
+            downloadFile(blob, getStandardOutputName(file.name));
+            showStatus(`Đã xử lý ${dataRows.length} dòng thành công! File đã được tải xuống.`, "success");
+
+        } catch (err) {
+            showStatus(`Lỗi khi xử lý file XLSX: ${err.message}`, "error");
+            console.error(err);
+        }
+    };
+    reader.onerror = function() {
+        showStatus("Không thể đọc file.", "error");
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function getStandardOutputName(origName) {
+    const parts = origName.split('.');
+    const ext = parts.pop();
+    const base = parts.join('.');
+    return `${base}_split.${ext}`;
+}
+
+function downloadFile(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }, 0);
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Debt Row Filter</title>
+  <style>
+    :root {
+      --bg-top: #eef6f1;
+      --bg-bottom: #f8efe3;
+      --ink: #1a2a25;
+      --muted: #66756f;
+      --card: rgba(255, 255, 255, 0.82);
+      --line: rgba(26, 42, 37, 0.1);
+      --accent: #2f7a61;
+      --accent-deep: #1d5a46;
+      --warm: #d78a3d;
+      --warm-deep: #b7682b;
+      --soft: #f5fbf7;
+      --shadow: 0 22px 60px rgba(42, 58, 50, 0.14);
+      --font-display: "Segoe UI", "Trebuchet MS", sans-serif;
+      --font-body: "Segoe UI", Tahoma, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 12%, rgba(47, 122, 97, 0.14), transparent 24%),
+        radial-gradient(circle at 88% 14%, rgba(215, 138, 61, 0.16), transparent 18%),
+        radial-gradient(circle at 80% 82%, rgba(47, 122, 97, 0.08), transparent 24%),
+        linear-gradient(145deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      width: 320px;
+      height: 320px;
+      border-radius: 999px;
+      filter: blur(24px);
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    body::before {
+      top: -90px;
+      left: -70px;
+      background: rgba(47, 122, 97, 0.16);
+    }
+
+    body::after {
+      right: -80px;
+      bottom: -80px;
+      background: rgba(215, 138, 61, 0.18);
+    }
+
+    .shell {
+      position: relative;
+      width: min(980px, 100%);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0)),
+        var(--card);
+      border: 1px solid var(--line);
+      border-radius: 36px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(14px);
+      animation: rise 700ms ease-out;
+    }
+
+    .shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.48) 22%, transparent 42%),
+        linear-gradient(180deg, rgba(47, 122, 97, 0.04), transparent 36%);
+      pointer-events: none;
+    }
+
+    .ribbon {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(47, 122, 97, 0.08);
+      border: 1px solid rgba(47, 122, 97, 0.12);
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+
+    .author-card {
+      margin-top: 22px;
+      padding: 18px 20px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(245, 251, 247, 0.96), rgba(255, 246, 237, 0.9));
+      border: 1px solid rgba(47, 122, 97, 0.1);
+      font-family: var(--font-body);
+      color: var(--accent-deep);
+      line-height: 1.7;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    .author-card strong {
+      font-family: var(--font-display);
+      letter-spacing: 0.01em;
+    }
+
+    .hero {
+      position: relative;
+      padding: 38px 40px 18px;
+      background:
+        radial-gradient(circle at top right, rgba(47, 122, 97, 0.16), transparent 30%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0));
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .stat-card {
+      align-self: stretch;
+      padding: 24px;
+      border-radius: 28px;
+      background:
+        linear-gradient(160deg, rgba(47, 122, 97, 0.96), rgba(29, 90, 70, 0.98));
+      color: #f7fbf9;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 32px rgba(29, 90, 70, 0.18);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat-label {
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+
+    h1 {
+      margin: 16px 0 16px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1;
+      letter-spacing: -0.03em;
+      max-width: 11ch;
+    }
+
+    .lead {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--muted);
+      max-width: 60ch;
+      line-height: 1.75;
+      font-size: 18px;
+    }
+
+    .stat-number {
+      margin: 16px 0 10px;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 4.2vw, 48px);
+      line-height: 1;
+    }
+
+    .stat-copy {
+      margin: 0;
+      font-family: var(--font-body);
+      color: rgba(248, 242, 230, 0.82);
+      line-height: 1.6;
+    }
+
+    .content {
+      position: relative;
+      padding: 16px 40px 40px;
+    }
+
+    form {
+      display: grid;
+      gap: 22px;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .dropzone {
+      position: relative;
+      border: 2px dashed rgba(47, 122, 97, 0.24);
+      border-radius: 30px;
+      padding: 32px 28px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(245, 251, 247, 0.98));
+      transition: border-color 220ms ease, transform 220ms ease, background 220ms ease, box-shadow 220ms ease;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 24px rgba(42, 58, 50, 0.04);
+    }
+
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background: linear-gradient(135deg, rgba(255, 252, 245, 0.98), rgba(239, 248, 244, 0.98));
+      transform: translateY(-3px) scale(1.005);
+      box-shadow: 0 18px 34px rgba(47, 122, 97, 0.12);
+    }
+
+    .dropzone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .drop-title {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .drop-copy {
+      margin: 0;
+      font-family: var(--font-body);
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 17px;
+      max-width: 60ch;
+    }
+
+    .drop-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 13px;
+      border-radius: 999px;
+      background: rgba(47, 122, 97, 0.08);
+      border: 1px solid rgba(47, 122, 97, 0.1);
+      font-family: var(--font-display);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: var(--accent-deep);
+    }
+
+    .file-chip {
+      display: none;
+      margin-top: 20px;
+      width: fit-content;
+      padding: 12px 16px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(47, 122, 97, 0.12), rgba(215, 138, 61, 0.12));
+      color: var(--accent-deep);
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .file-chip.active {
+      display: inline-flex;
+      animation: pop 220ms ease-out;
+    }
+
+    button {
+      border: 0;
+      border-radius: 18px;
+      padding: 16px 22px;
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: #fffdf9;
+      background: linear-gradient(135deg, var(--warm), var(--warm-deep));
+      cursor: pointer;
+      transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease, filter 180ms ease;
+      box-shadow: 0 14px 28px rgba(183, 104, 43, 0.24);
+    }
+
+    .secondary-btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      box-shadow: 0 14px 28px rgba(29, 90, 70, 0.2);
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      filter: saturate(1.04);
+    }
+
+    button:disabled {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    .status {
+      min-height: 34px;
+      padding: 6px 4px 0;
+      font-family: var(--font-body);
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 17px;
+      transition: color 180ms ease;
+    }
+
+    .status.error {
+      color: #9a2f2f;
+    }
+
+    .tips {
+      margin: 4px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      color: var(--muted);
+    }
+
+    .tips li {
+      padding: 18px 20px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.58);
+      border: 1px solid rgba(47, 122, 97, 0.08);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 0;
+        transform: scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hero, .content {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .hero-grid,
+      .tips {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        max-width: none;
+      }
+
+      .action-row {
+        flex-direction: column;
+      }
+
+      .action-row button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <div class="ribbon">Word Debt Filter</div>
+          <h1>Filter debt rows in Word files</h1>
+          <p class="lead">
+            Upload a <strong>.docx</strong> or <strong>.docm</strong> file. The page will remove rows where the
+            <strong>Debt Amount</strong> column is <strong>0</strong> or empty, then recalculate the total row.
+          </p>
+          <div class="author-card">
+            <div><strong>Author:</strong> Nguyễn Hồng Thái</div>
+            <div><strong>Organization:</strong> Shantek Group</div>
+            <div><strong>Email:</strong> thainguyenbpo@gmail.com</div>
+          </div>
+        </div>
+
+        <aside class="stat-card">
+          <div class="stat-label">Key benefit</div>
+          <div class="stat-number">Simple flow</div>
+          <p class="stat-copy">
+            Open a document, run the filter, and save the cleaned result with a calmer, more guided experience.
+          </p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="content">
+      <form id="upload-form">
+        <label class="dropzone" id="dropzone">
+          <input id="file-input" name="document" type="file" accept=".docx,.docm">
+          <div class="drop-title">Drag and drop your file here or click to choose</div>
+          <p class="drop-copy">
+            No complex setup required. This HTML file opens the Word document, filters invalid debt rows, and generates the output directly in the browser.
+          </p>
+          <div class="drop-meta">
+            <span class="meta-pill">Supports .docx</span>
+            <span class="meta-pill">Supports .docm</span>
+            <span class="meta-pill">Updates totals</span>
+          </div>
+          <div class="file-chip" id="file-chip"></div>
+        </label>
+
+        <div class="action-row">
+          <button class="secondary-btn" id="pick-btn" type="button">Open from folder</button>
+          <button id="submit-btn" type="submit">Process and save result</button>
+        </div>
+        <div class="status" id="status"></div>
+      </form>
+
+      <ul class="tips">
+        <li>Only Word files in `.docx` and `.docm` format are supported.</li>
+        <li>In Chrome or Edge, “Open from folder” lets the result be saved back to the same folder.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script>
+    const form = document.getElementById("upload-form");
+    const fileInput = document.getElementById("file-input");
+    const dropzone = document.getElementById("dropzone");
+    const fileChip = document.getElementById("file-chip");
+    const statusEl = document.getElementById("status");
+    const submitBtn = document.getElementById("submit-btn");
+    const pickBtn = document.getElementById("pick-btn");
+    const W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+    let selectedFile = null;
+    let selectedFileHandle = null;
+
+    function normalizeHeader(text) {
+      return text.replace(/\s+/g, " ").trim().toLowerCase();
+    }
+
+    function getCellText(cell) {
+      const textNodes = cell.getElementsByTagNameNS(W_NS, "t");
+      return Array.from(textNodes).map((node) => node.textContent || "").join("").trim();
+    }
+
+    function setCellText(cell, value, documentXml) {
+      const textNodes = cell.getElementsByTagNameNS(W_NS, "t");
+      if (!textNodes.length) {
+        let paragraph = cell.getElementsByTagNameNS(W_NS, "p")[0];
+        if (!paragraph) {
+          paragraph = documentXml.createElementNS(W_NS, "w:p");
+          cell.appendChild(paragraph);
+        }
+        const run = documentXml.createElementNS(W_NS, "w:r");
+        const textNode = documentXml.createElementNS(W_NS, "w:t");
+        textNode.textContent = value;
+        run.appendChild(textNode);
+        paragraph.appendChild(run);
+        return;
+      }
+
+      textNodes[0].textContent = value;
+      for (let index = 1; index < textNodes.length; index += 1) {
+        textNodes[index].textContent = "";
+      }
+    }
+
+    function parseAmount(text) {
+      const cleaned = text.trim();
+      if (!cleaned) {
+        return null;
+      }
+
+      let digitsOnly = cleaned.replace(/[^\d,.\-]/g, "");
+      if (!digitsOnly) {
+        return null;
+      }
+
+      if (digitsOnly.includes(",") && digitsOnly.includes(".")) {
+        digitsOnly = digitsOnly.replace(/\./g, "").replace(",", ".");
+      } else if (digitsOnly.includes(",")) {
+        digitsOnly = digitsOnly.replace(",", ".");
+      } else {
+        digitsOnly = digitsOnly.replace(/\./g, "");
+      }
+
+      const parsed = Number(digitsOnly);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function formatAmount(value) {
+      return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    function isTotalRow(row) {
+      const cells = row.getElementsByTagNameNS(W_NS, "tc");
+      return Array.from(cells).some((cell) => normalizeHeader(getCellText(cell)).includes("tổng cộng"));
+    }
+
+    function findDebtColumn(table) {
+      const rows = table.getElementsByTagNameNS(W_NS, "tr");
+      if (!rows.length) {
+        return null;
+      }
+
+      const headerCells = rows[0].getElementsByTagNameNS(W_NS, "tc");
+      for (let index = 0; index < headerCells.length; index += 1) {
+        if (normalizeHeader(getCellText(headerCells[index])) === "số tiền nợ") {
+          return index;
+        }
+      }
+      return null;
+    }
+
+    function filterTable(table, documentXml) {
+      const rows = Array.from(table.getElementsByTagNameNS(W_NS, "tr"));
+      if (rows.length < 2) {
+        return { removed: 0, matched: 0 };
+      }
+
+      const debtColumn = findDebtColumn(table);
+      if (debtColumn === null) {
+        return { removed: 0, matched: 0 };
+      }
+
+      let removed = 0;
+      let keptTotal = 0;
+      let totalRow = null;
+
+      for (let index = 1; index < rows.length; index += 1) {
+        const row = rows[index];
+        if (isTotalRow(row)) {
+          totalRow = row;
+          continue;
+        }
+
+        const cells = row.getElementsByTagNameNS(W_NS, "tc");
+        const amountText = debtColumn < cells.length ? getCellText(cells[debtColumn]) : "";
+        const amountValue = parseAmount(amountText);
+
+        if (amountValue === null || amountValue === 0) {
+          row.parentNode.removeChild(row);
+          removed += 1;
+        } else {
+          keptTotal += amountValue;
+        }
+      }
+
+      if (totalRow) {
+        const totalCells = totalRow.getElementsByTagNameNS(W_NS, "tc");
+        if (totalCells.length) {
+          const targetIndex = debtColumn < totalCells.length ? debtColumn : totalCells.length - 1;
+          setCellText(totalCells[targetIndex], formatAmount(keptTotal), documentXml);
+        }
+      }
+
+      return { removed, matched: 1 };
+    }
+
+    async function processWordFile(file) {
+      if (!window.JSZip) {
+        throw new Error("JSZip could not be loaded. Please check your internet connection or store the library locally.");
+      }
+
+      const zip = await JSZip.loadAsync(file);
+      const documentEntry = zip.file("word/document.xml");
+      if (!documentEntry) {
+        throw new Error("The file does not contain word/document.xml.");
+      }
+
+      const xmlText = await documentEntry.async("string");
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+      const parseError = xmlDoc.getElementsByTagName("parsererror")[0];
+      if (parseError) {
+        throw new Error("The Word XML content could not be parsed.");
+      }
+
+      const tables = Array.from(xmlDoc.getElementsByTagNameNS(W_NS, "tbl"));
+      let removedRows = 0;
+      let matchedTables = 0;
+
+      for (const table of tables) {
+        const result = filterTable(table, xmlDoc);
+        removedRows += result.removed;
+        matchedTables += result.matched;
+      }
+
+      const serialized = new XMLSerializer().serializeToString(xmlDoc);
+      zip.file("word/document.xml", serialized);
+
+      const outputBlob = await zip.generateAsync({
+        type: "blob",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      });
+
+      return {
+        blob: outputBlob,
+        removedRows,
+        matchedTables
+      };
+    }
+
+    function buildOutputName(filename) {
+      const match = filename.match(/^(.*?)(\.[^.]+)?$/);
+      const base = match && match[1] ? match[1] : "document";
+      const ext = match && match[2] ? match[2] : ".docx";
+      return `${base}_filtered${ext}`;
+    }
+
+    function setStatus(message, isError = false) {
+      statusEl.textContent = message;
+      statusEl.classList.toggle("error", isError);
+    }
+
+    function refreshSelectedFile() {
+      const file = selectedFile || fileInput.files[0];
+      if (!file) {
+        fileChip.textContent = "";
+        fileChip.classList.remove("active");
+        return;
+      }
+
+      fileChip.textContent = `${file.name} - ${(file.size / 1024).toFixed(1)} KB`;
+      fileChip.classList.add("active");
+    }
+
+    function clearSelectedFile() {
+      selectedFile = null;
+      selectedFileHandle = null;
+      fileInput.value = "";
+      fileChip.textContent = "";
+      fileChip.classList.remove("active");
+    }
+
+    fileInput.addEventListener("change", () => {
+      selectedFile = fileInput.files[0] || null;
+      selectedFileHandle = null;
+      refreshSelectedFile();
+    });
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      dropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropzone.classList.add("dragover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      dropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        dropzone.classList.remove("dragover");
+      });
+    });
+
+    dropzone.addEventListener("drop", (event) => {
+      const files = event.dataTransfer?.files;
+      if (!files || !files.length) {
+        return;
+      }
+      selectedFile = files[0];
+      selectedFileHandle = null;
+      fileInput.files = files;
+      refreshSelectedFile();
+    });
+
+    pickBtn.addEventListener("click", async () => {
+      if (!window.showOpenFilePicker) {
+        setStatus("This browser does not support folder-aware file access. Use Chrome or Edge for same-folder saving.", true);
+        return;
+      }
+
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          multiple: false,
+          types: [
+            {
+              description: "Word Documents",
+              accept: {
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+                "application/vnd.ms-word.document.macroEnabled.12": [".docm"]
+              }
+            }
+          ]
+        });
+
+        selectedFileHandle = handle;
+        selectedFile = await handle.getFile();
+        refreshSelectedFile();
+        setStatus("File selected from folder. The processed file can now be saved back to the same folder.");
+      } catch (error) {
+        if (error && error.name === "AbortError") {
+          return;
+        }
+        setStatus("Could not open the file picker.", true);
+      }
+    });
+
+    async function saveResult(blob, originalName) {
+      const outputName = buildOutputName(originalName);
+
+      if (selectedFileHandle && window.showSaveFilePicker) {
+        const saveHandle = await window.showSaveFilePicker({
+          suggestedName: outputName,
+          startIn: selectedFileHandle,
+          types: [
+            {
+              description: "Word Documents",
+              accept: {
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+                "application/vnd.ms-word.document.macroEnabled.12": [".docm"]
+              }
+            }
+          ]
+        });
+
+        const writable = await saveHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return `Saved file: ${saveHandle.name}`;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = outputName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      return `Downloaded file: ${outputName}. Same-folder saving is available via 'Open from folder' in Chrome or Edge.`;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const file = selectedFile || fileInput.files[0];
+      if (!file) {
+        setStatus("No file selected.", true);
+        return;
+      }
+
+      submitBtn.disabled = true;
+      setStatus("Processing file...");
+
+      try {
+        const extension = file.name.split(".").pop().toLowerCase();
+        if (!["docx", "docm"].includes(extension)) {
+          throw new Error("Only .docx and .docm files are supported.");
+        }
+
+        const { blob, removedRows, matchedTables } = await processWordFile(file);
+        const saveMessage = await saveResult(blob, file.name);
+        setStatus(`Processed ${matchedTables} table(s) and removed ${removedRows} row(s). ${saveMessage}`);
+        clearSelectedFile();
+      } catch (error) {
+        setStatus(error.message || "The file could not be processed.", true);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

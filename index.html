@@ -1,0 +1,243 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#123b67">
+
+    <title>Cổng Công Cụ Tiện Ích | Shantek Group</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f3f6fa;
+            color: #243247;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: min(920px, 92%);
+            margin: 40px auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #123b67, #2467a6);
+            color: white;
+            padding: 36px 30px;
+            border-radius: 18px;
+            box-shadow: 0 8px 24px #123b671c;
+        }
+
+        .header .organization {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .header h1 {
+            margin: 12px 0 8px;
+            font-size: clamp(25px, 5vw, 36px);
+            line-height: 1.25;
+        }
+
+        .header p {
+            margin-bottom: 0;
+            color: #e1edfa;
+        }
+
+        .section-title {
+            margin: 30px 0 16px;
+            font-size: 21px;
+        }
+
+        .tools {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .tool-card {
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 24px;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px #123b6715;
+            border-color: #8bb9e8;
+        }
+
+        .tool-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            margin-bottom: 16px;
+            border-radius: 12px;
+            background: #e8f2ff;
+            font-size: 25px;
+        }
+
+        .tool-card:nth-child(2) .tool-icon {
+            background: #e7f7ed;
+        }
+
+        .tool-card h3 {
+            margin: 0 0 8px;
+            font-size: 19px;
+            color: #164b80;
+        }
+
+        .tool-card p {
+            flex-grow: 1;
+            margin: 0 0 18px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .tool-link {
+            color: #1769aa;
+            font-weight: 600;
+        }
+
+        .author {
+            margin-top: 28px;
+            padding: 24px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+        }
+
+        .author h2 {
+            margin: 0 0 14px;
+            font-size: 20px;
+        }
+
+        .author p {
+            margin: 8px 0;
+            overflow-wrap: anywhere;
+        }
+
+        .label {
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        footer {
+            padding: 22px 0 10px;
+            text-align: center;
+            color: #8491a3;
+            font-size: 13px;
+        }
+
+        a:focus-visible {
+            outline: 3px solid #2467a6;
+            outline-offset: 4px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 20px auto;
+            }
+
+            .header {
+                padding: 26px 22px;
+            }
+
+            .tools {
+                grid-template-columns: 1fr;
+            }
+
+            .tool-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <header class="header">
+            <div class="organization">
+                SHANTEK GROUP · HO CHI MINH CITY
+            </div>
+
+            <h1>Cổng Công Cụ Tiện Ích</h1>
+
+            <p>
+                Truy cập nhanh các công cụ hỗ trợ xử lý dữ liệu
+                và nâng cao hiệu quả công việc.
+            </p>
+        </header>
+
+        <h2 class="section-title">Danh sách công cụ</h2>
+
+        <section class="tools" aria-label="Danh sách công cụ">
+
+            <a class="tool-card" href="./TachDiaChi.html">
+                <div class="tool-icon" aria-hidden="true">📍</div>
+
+                <h3>Công Cụ Tách Địa Chỉ</h3>
+
+                <p>
+                    Truy cập công cụ hỗ trợ xử lý và tách thông tin
+                    địa chỉ.
+                </p>
+
+                <span class="tool-link">Mở công cụ →</span>
+            </a>
+
+            <a class="tool-card"
+               href="./filter_debt_rows_web.html">
+                <div class="tool-icon" aria-hidden="true">📄</div>
+
+                <h3>Filter Debt Rows in Word Files</h3>
+
+                <p>
+                    Lọc các dòng dữ liệu liên quan đến công nợ
+                    trong tệp Word.
+                </p>
+
+                <span class="tool-link">Open tool →</span>
+            </a>
+
+        </section>
+
+        <section class="author" aria-labelledby="author-title">
+            <h2 id="author-title">Thông tin tác giả</h2>
+
+            <p>
+                <span class="label">Author:</span>
+                Nguyễn Hồng Thái
+            </p>
+
+            <p>
+                <span class="label">Organization:</span>
+                Shantek Group
+            </p>
+
+            <p>
+                <span class="label">Address:</span>
+                thainguyenbpo@gmail.com
+            </p>
+        </section>
+
+        <footer>
+            © 2026 · Công cụ tiện ích nội bộ
+        </footer>
+    </main>
+</body>
+</html>
